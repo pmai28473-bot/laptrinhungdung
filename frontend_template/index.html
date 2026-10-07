@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LHU E-Commerce - Đặt hàng</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+      display: none; /* Chỉ hiển thị sau khi kiểm tra quyền */
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #111827;
+      color: #fff;
+      padding: 16px 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+      gap: 16px;
+    }
+    header h1 { margin: 0; font-size: 22px; }
+    .user-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .user-name {
+      font-weight: 700;
+      color: #e5e7eb;
+    }
+    .logout {
+      border: 0;
+      background: #ef4444;
+      color: white;
+      padding: 9px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .cart-btn {
+      border: 0;
+      background: #2563eb;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .container { width: min(1200px, 90%); margin: 30px auto; }
+    .status {
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      background: #e0f2fe;
+      color: #075985;
+    }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,.07);
+      display: flex;
+      flex-direction: column;
+    }
+    .product-image {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: #e5e7eb;
+    }
+    .no-image {
+      height: 180px;
+      display: grid;
+      place-items: center;
+      background: #e5e7eb;
+      color: #6b7280;
+    }
+    .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+    .card h3 { margin: 0 0 8px; font-size: 18px; }
+    .price { color: #dc2626; font-weight: 800; font-size: 18px; margin: 6px 0 12px; }
+    .add-btn {
+      margin-top: auto;
+      border: 0;
+      background: #16a34a;
+      color: white;
+      padding: 11px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .add-btn:hover { background: #15803d; }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 30;
+      display: none;
+    }
+    .overlay.show { display: block; }
+    .cart-panel {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: min(480px, 100%);
+      height: 100%;
+      background: white;
+      padding: 22px;
+      overflow-y: auto;
+    }
+    .cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+    }
+    .close-btn {
+      border: 0;
+      background: #e5e7eb;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .cart-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .qty {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 7px;
+    }
+    .qty button {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #d1d5db;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .remove { color: #dc2626; cursor: pointer; border: 0; background: none; }
+    .total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 20px;
+      font-weight: 800;
+      padding: 18px 0;
+    }
+    form { border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    label { display: block; margin: 10px 0 6px; font-weight: 700; }
+    input, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
+      font: inherit;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    .order-btn {
+      width: 100%;
+      margin-top: 15px;
+      padding: 13px;
+      border: 0;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .order-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .empty { text-align: center; color: #6b7280; padding: 30px 0; }
+    .success {
+      padding: 14px;
+      border-radius: 10px;
+      background: #dcfce7;
+      color: #166534;
+      margin-bottom: 15px;
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .container { width: 94%; }
+      header { padding: 14px 3%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛒 LHU E-Commerce</h1>
+
+  <div class="user-area">
+    <span class="user-name" id="customerName">Khách hàng</span>
+    <button class="logout" onclick="logout()">Đăng xuất</button>
+    <button class="cart-btn" onclick="openCart()">🛍️ Giỏ hàng (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<main class="container">
+  <div id="status" class="status">Đang tải sản phẩm...</div>
+  <div id="products" class="products"></div>
+</main>
+
+<div id="cartOverlay" class="overlay" onclick="closeCart(event)">
+  <aside class="cart-panel" onclick="event.stopPropagation()">
+    <div class="cart-header">
+      <h2>Giỏ hàng</h2>
+      <button class="close-btn" onclick="closeCart()">✕</button>
+    </div>
+
+    <div id="successBox" class="success"></div>
+    <div id="cartItems"></div>
+
+    <div id="cartContent">
+      <div class="total">
+        <span>Tổng cộng</span>
+        <span id="cartTotal">0 ₫</span>
+      </div>
+
+      <form id="orderForm">
+        <h3>Thông tin đặt hàng</h3>
+
+        <label for="name">Họ và tên *</label>
+        <input id="name" name="name" required placeholder="Nguyễn Văn A">
+
+        <label for="phone">Số điện thoại *</label>
+        <input id="phone" name="phone" required placeholder="09xxxxxxxx">
+
+        <label for="email">Email *</label>
+        <input id="email" name="email" type="email" required placeholder="example@gmail.com">
+
+        <label for="address">Địa chỉ *</label>
+        <textarea id="address" name="address" required placeholder="Số nhà, đường, phường/xã, quận/huyện..."></textarea>
+
+        <label for="note">Ghi chú</label>
+        <textarea id="note" name="note" placeholder="Ghi chú cho đơn hàng (không bắt buộc)"></textarea>
+
+        <button id="orderBtn" class="order-btn" type="submit">
+          Xác Nhận Đặt Hàng
+        </button>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:5000/api';
+  const PRODUCTS_API = `${API_BASE}/products`;
+  const ORDERS_API = `${API_BASE}/orders`;
+
+  function redirectToLogin() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
+    window.location.replace('login.html');
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
+    window.location.replace('login.html');
+  }
+
+  function decodeJwtPayload(token) {
+    const parts = token.split('.');
+    if (parts.length !== 3) throw new Error('JWT không hợp lệ');
+
+    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(char => '%' + ('00' + char.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+
+    return JSON.parse(json);
+  }
+
+  function checkCustomerAccess() {
+    const token = localStorage.getItem('token');
+    const savedRole = (localStorage.getItem('role') || '').toLowerCase();
+
+    if (!token) {
+      redirectToLogin();
+      return false;
+    }
+
+    try {
+      const payload = decodeJwtPayload(token);
+      const tokenRole = String(
+        payload.role ||
+        payload.user?.role ||
+        payload.data?.role ||
+        ''
+      ).toLowerCase();
+
+      if (payload.exp && Date.now() >= Number(payload.exp) * 1000) {
+        redirectToLogin();
+        return false;
+      }
+
+      if (savedRole === 'admin' || tokenRole === 'admin') {
+        window.location.replace('admin.html');
+        return false;
+      }
+
+      const effectiveRole = tokenRole || savedRole;
+
+      if (effectiveRole !== 'customer') {
+        redirectToLogin();
+        return false;
+      }
+
+      document.body.style.display = 'block';
+
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          const name = user.name || user.email || 'Khách hàng';
+          document.getElementById('customerName').textContent = name;
+        } catch (_) {
+          // ignore
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('JWT ERROR:', error);
+      redirectToLogin();
+      return false;
+    }
+  }
+
+  let products = [];
+  let cart = JSON.parse(localStorage.getItem('lhu_cart') || '[]');
+
+  const money = value => new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(Number(value) || 0);
+
+  function saveCart() {
+    localStorage.setItem('lhu_cart', JSON.stringify(cart));
+    renderCart();
+  }
+
+  function getProductId(product) {
+    return product._id || product.id;
+  }
+
+  function getProductName(product) {
+    return product.name || product.productName || product.title || 'Sản phẩm';
+  }
+
+  function getProductPrice(product) {
+    return Number(product.price ?? product.salePrice ?? product.unitPrice ?? 0);
+  }
+
+  function getProductImage(product) {
+    return product.image || product.imageUrl || product.thumbnail || '';
+  }
+
+  async function loadProducts() {
+    const status = document.getElementById('status');
+
+    try {
+      const response = await fetch(PRODUCTS_API);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const result = await response.json();
+
+      // Hỗ trợ cả response dạng [] và { data: [] }
+      products = Array.isArray(result)
+        ? result
+        : (Array.isArray(result.data) ? result.data : []);
+
+      renderProducts();
+
+      status.textContent = `Đã tải ${products.length} sản phẩm từ Backend.`;
+      status.className = 'status';
+    } catch (error) {
+      console.error(error);
+      status.textContent =
+        'Không kết nối được Backend. Hãy kiểm tra npm.cmd run dev và http://localhost:5000';
+      status.className = 'status error';
+    }
+  }
+
+  function renderProducts() {
+    const container = document.getElementById('products');
+
+    if (!products.length) {
+      container.innerHTML = '<div class="empty">Chưa có sản phẩm.</div>';
+      return;
+    }
+
+    container.innerHTML = products.map(product => {
+      const id = getProductId(product);
+      const name = getProductName(product);
+      const price = getProductPrice(product);
+      const image = getProductImage(product);
+
+      return `
+        <article class="card">
+          ${
+            image
+              ? `<img class="product-image" src="${image}" alt="${escapeHtml(name)}"
+                   onerror="this.outerHTML='<div class=&quot;no-image&quot;>Không có ảnh</div>'">`
+              : `<div class="no-image">📦 Không có ảnh</div>`
+          }
+          <div class="card-body">
+            <h3>${escapeHtml(name)}</h3>
+            <div class="price">${money(price)}</div>
+            <button class="add-btn" onclick="addToCart('${String(id)}')">
+              + Thêm vào giỏ
+            </button>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function addToCart(id) {
+    const product = products.find(p => String(getProductId(p)) === String(id));
+    if (!product) return;
+
+    const existing = cart.find(
+      item => String(item.id) === String(getProductId(product))
+    );
+
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        id: getProductId(product),
+        name: getProductName(product),
+        price: getProductPrice(product),
+        image: getProductImage(product),
+        quantity: 1
+      });
+    }
+
+    saveCart();
+    openCart();
+  }
+
+  function changeQty(id, amount) {
+    const item = cart.find(x => String(x.id) === String(id));
+    if (!item) return;
+
+    item.quantity += amount;
+
+    if (item.quantity <= 0) {
+      cart = cart.filter(x => String(x.id) !== String(id));
+    }
+
+    saveCart();
+  }
+
+  function removeItem(id) {
+    cart = cart.filter(x => String(x.id) !== String(id));
+    saveCart();
+  }
+
+  function getTotal() {
+    return cart.reduce((sum, item) => {
+      return sum + Number(item.price) * Number(item.quantity);
+    }, 0);
+  }
+
+  function renderCart() {
+    const container = document.getElementById('cartItems');
+    const count = cart.reduce((sum, item) => sum + Number(item.quantity), 0);
+
+    document.getElementById('cartCount').textContent = count;
+    document.getElementById('cartTotal').textContent = money(getTotal());
+
+    if (!cart.length) {
+      container.innerHTML = '<div class="empty">Giỏ hàng đang trống.</div>';
+      return;
+    }
+
+    container.innerHTML = cart.map(item => `
+      <div class="cart-item">
+        <div>
+          <strong>${escapeHtml(item.name)}</strong>
+          <div>${money(item.price)}</div>
+          <div class="qty">
+            <button onclick="changeQty('${item.id}', -1)">−</button>
+            <span>${item.quantity}</span>
+            <button onclick="changeQty('${item.id}', 1)">+</button>
+          </div>
+        </div>
+        <button class="remove" onclick="removeItem('${item.id}')">Xóa</button>
+      </div>
+    `).join('');
+  }
+
+  function openCart() {
+    document.getElementById('cartOverlay').classList.add('show');
+    renderCart();
+  }
+
+  function closeCart(event) {
+    if (!event || event.target.id === 'cartOverlay') {
+      document.getElementById('cartOverlay').classList.remove('show');
+    }
+  }
+
+  async function submitOrder(event) {
+    event.preventDefault();
+
+    if (!cart.length) {
+      alert('Giỏ hàng đang trống!');
+      return;
+    }
+
+    const form = event.target;
+    const orderBtn = document.getElementById('orderBtn');
+    const successBox = document.getElementById('successBox');
+
+    const customerName = form.name.value.trim();
+    const customerPhone = form.phone.value.trim();
+    const customerEmail = form.email.value.trim();
+    const shippingAddress = form.address.value.trim();
+    const note = form.note.value.trim();
+
+    const items = cart.map(item => ({
+      productId: item.id,
+      quantity: Number(item.quantity),
+      price: Number(item.price)
+    }));
+
+    const payload = {
+      customerName,
+      customerPhone,
+      customerEmail,
+      shippingAddress,
+      note,
+      paymentMethod: 'COD',
+      shippingFee: 25000,
+      items,
+      totalAmount: getTotal() + 25000
+    };
+
+    orderBtn.disabled = true;
+    orderBtn.textContent = 'Đang đặt hàng...';
+
+    try {
+      const response = await fetch(ORDERS_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.message ||
+          result.error ||
+          `Đặt hàng thất bại (HTTP ${response.status})`
+        );
+      }
+
+      const orderId =
+        result.data?._id ||
+        result.data?.id ||
+        result.order?._id ||
+        result.order?.id ||
+        result._id ||
+        result.id ||
+        '';
+
+      successBox.style.display = 'block';
+      successBox.innerHTML =
+        `✅ Đặt hàng thành công!${orderId ? `<br>Mã đơn: <strong>${escapeHtml(String(orderId))}</strong>` : ''}`;
+
+      cart = [];
+      saveCart();
+      form.reset();
+
+      // Giữ thông báo thành công và làm sạch giỏ.
+      document.getElementById('cartItems').innerHTML =
+        '<div class="empty">Đơn hàng đã được gửi thành công.</div>';
+      document.getElementById('cartTotal').textContent = money(0);
+
+    } catch (error) {
+      console.error('ORDER ERROR:', error);
+      alert(
+        'Không thể đặt hàng.\\n\\n' +
+        error.message +
+        '\\n\\nKiểm tra Terminal Backend và F12 → Console/Network.'
+      );
+    } finally {
+      orderBtn.disabled = false;
+      orderBtn.textContent = 'Xác Nhận Đặt Hàng';
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  document.getElementById('orderForm').addEventListener('submit', submitOrder);
+
+  if (checkCustomerAccess()) {
+    renderCart();
+    loadProducts();
+  }
+</script>
+
+</body>
+</html>

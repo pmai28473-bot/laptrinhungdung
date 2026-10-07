@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - LHU E-Commerce</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      display: none; /* Chỉ hiện sau khi kiểm tra quyền */
+    }
+    header {
+      background: #111827;
+      color: white;
+      padding: 16px 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 22px; }
+    .user-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logout {
+      border: 0;
+      background: #dc2626;
+      color: white;
+      padding: 9px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    main {
+      width: min(1100px, 92%);
+      margin: 30px auto;
+    }
+    .welcome {
+      background: white;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.06);
+      margin-bottom: 20px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.06);
+    }
+    .card h3 { margin-top: 0; }
+    .admin-badge {
+      display: inline-block;
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .management-panel {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 22px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.06);
+    }
+    .management-panel h3 {
+      margin-top: 0;
+    }
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    input, select, textarea, button {
+      font: inherit;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+    }
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .danger-btn {
+      background: #dc2626 !important;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .list-box {
+      display: grid;
+      gap: 12px;
+    }
+    .row-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
+    .order-item {
+      align-items: flex-start;
+    }
+    .order-actions {
+      min-width: 150px;
+    }
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .user-table th,
+    .user-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: middle;
+    }
+    .user-table th {
+      background: #f3f4f6;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #4b5563;
+    }
+    .user-table tbody tr:hover {
+      background: #f9fafb;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .status-blocked {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .role-select {
+      min-width: 120px;
+    }
+    .mini-btn {
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 0;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+    .toggle-btn {
+      background: #f59e0b;
+      color: white;
+    }
+    .delete-btn {
+      background: #dc2626;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>👑 LHU E-Commerce - Admin</h1>
+
+  <div class="user-area">
+    <span id="adminName">Admin</span>
+    <span class="admin-badge">ADMIN</span>
+    <button class="logout" onclick="logout()">Đăng xuất</button>
+  </div>
+</header>
+
+<main>
+  <section class="welcome">
+    <h2>Trang quản trị</h2>
+    <p>
+      Xin chào <strong id="welcomeName">Admin</strong>.
+      Bạn đang đăng nhập với quyền quản trị viên.
+    </p>
+  </section>
+
+  <section class="cards" id="statsGrid">
+    <div class="card">
+      <h3>📦 Đơn hàng</h3>
+      <p>Quản lý và cập nhật trạng thái đơn hàng.</p>
+    </div>
+
+    <div class="card">
+      <h3>🛍️ Sản phẩm</h3>
+      <p>Quản lý danh sách sản phẩm.</p>
+    </div>
+
+    <div class="card">
+      <h3>📁 Danh mục</h3>
+      <p>Quản lý các danh mục sản phẩm.</p>
+    </div>
+
+    <div class="card">
+      <h3>👥 Người dùng</h3>
+      <p>Quản lý tài khoản khách hàng và quản trị viên.</p>
+    </div>
+  </section>
+
+  <section class="management-panel">
+    <h3>📁 Danh mục</h3>
+    <form id="categoryForm">
+      <input id="categoryName" placeholder="Tên danh mục" required />
+      <input id="categoryDescription" placeholder="Mô tả" />
+      <input id="categoryImage" placeholder="URL hình ảnh" />
+      <button type="submit">Thêm danh mục</button>
+    </form>
+    <div id="categoryList" class="list-box"></div>
+  </section>
+
+  <section class="management-panel">
+    <h3>🛍️ Sản phẩm</h3>
+    <form id="productForm">
+      <input id="productName" placeholder="Tên sản phẩm" required />
+      <select id="productCategory"></select>
+      <input id="productBrand" placeholder="Thương hiệu" />
+      <input id="productOriginalPrice" type="number" placeholder="Giá gốc" required />
+      <input id="productSalePrice" type="number" placeholder="Giá bán" required />
+      <input id="productStock" type="number" placeholder="Số lượng" value="10" />
+      <input id="productImage" placeholder="URL hình ảnh" />
+      <textarea id="productDescription" placeholder="Mô tả sản phẩm"></textarea>
+      <button type="submit">Thêm sản phẩm</button>
+    </form>
+    <div id="productList" class="list-box"></div>
+  </section>
+
+  <section class="management-panel">
+    <h3>📦 Đơn hàng</h3>
+    <div id="orderList" class="list-box"></div>
+  </section>
+
+  <section class="management-panel">
+    <h3>👥 Người dùng</h3>
+    <form id="userForm">
+      <input id="userName" placeholder="Họ tên" required />
+      <input id="userEmail" type="email" placeholder="Email" required />
+      <input id="userPassword" type="password" placeholder="Mật khẩu" required />
+      <input id="userPhone" placeholder="Số điện thoại" />
+      <select id="userRole">
+        <option value="customer">customer</option>
+        <option value="admin">admin</option>
+      </select>
+      <button type="submit">Thêm người dùng</button>
+    </form>
+    <div id="userList" class="list-box"></div>
+  </section>
+</main>
+
+<script>
+  const API_BASE = 'http://localhost:5000/api';
+
+  function redirectToLogin() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
+    window.location.replace('login.html');
+  }
+
+  function decodeJwtPayload(token) {
+    const parts = token.split('.');
+    if (parts.length !== 3) throw new Error('JWT không hợp lệ');
+
+    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(char => '%' + ('00' + char.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+
+    return JSON.parse(json);
+  }
+
+  function getAuthHeaders(extra = {}) {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      ...extra,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+  }
+
+  async function apiRequest(path, options = {}) {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: getAuthHeaders(options.headers || {})
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.message || 'Có lỗi xảy ra');
+    }
+
+    return data;
+  }
+
+  function checkAdminAccess() {
+    const token = localStorage.getItem('token');
+    const savedRole = (localStorage.getItem('role') || '').toLowerCase();
+
+    if (!token) {
+      redirectToLogin();
+      return false;
+    }
+
+    try {
+      const payload = decodeJwtPayload(token);
+      const tokenRole = String(payload.role || payload.user?.role || payload.data?.role || '').toLowerCase();
+      const effectiveRole = tokenRole || savedRole;
+
+      if (payload.exp && Date.now() >= Number(payload.exp) * 1000) {
+        redirectToLogin();
+        return false;
+      }
+
+      if (effectiveRole !== 'admin') {
+        redirectToLogin();
+        return false;
+      }
+
+      document.body.style.display = 'block';
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        const name = user.name || user.email || 'Admin';
+        document.getElementById('adminName').textContent = name;
+        document.getElementById('welcomeName').textContent = name;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('JWT ERROR:', error);
+      redirectToLogin();
+      return false;
+    }
+  }
+
+  function renderCategoryList(categories) {
+    const container = document.getElementById('categoryList');
+    if (!categories.length) {
+      container.innerHTML = '<p>Chưa có danh mục nào.</p>';
+      return;
+    }
+
+    container.innerHTML = categories.map(cat => `
+      <div class="row-item">
+        <div>
+          <strong>${cat.name}</strong><br>
+          <small>${cat.description || 'Không có mô tả'}</small>
+        </div>
+        <button data-id="${cat._id}" class="danger-btn">Xóa</button>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.danger-btn').forEach(button => {
+      button.addEventListener('click', async () => {
+        try {
+          await apiRequest(`/categories/${button.dataset.id}`, { method: 'DELETE' });
+          loadCategories();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    });
+  }
+
+  function renderProductList(products) {
+    const container = document.getElementById('productList');
+    if (!products.length) {
+      container.innerHTML = '<p>Chưa có sản phẩm nào.</p>';
+      return;
+    }
+
+    container.innerHTML = products.map(product => `
+      <div class="row-item">
+        <div>
+          <strong>${product.name}</strong><br>
+          <small>${product.brand || 'LHU Brand'} • ${product.stock} trong kho • ${Number(product.salePrice).toLocaleString()}đ</small>
+        </div>
+        <button data-id="${product._id}" class="danger-btn">Xóa</button>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.danger-btn').forEach(button => {
+      button.addEventListener('click', async () => {
+        try {
+          await apiRequest(`/products/${button.dataset.id}`, { method: 'DELETE' });
+          loadProducts();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    });
+  }
+
+  function renderOrders(orders) {
+    const container = document.getElementById('orderList');
+    if (!orders.length) {
+      container.innerHTML = '<p>Chưa có đơn hàng nào.</p>';
+      return;
+    }
+
+    container.innerHTML = orders.map(order => `
+      <div class="row-item order-item">
+        <div>
+          <strong>${order.orderCode}</strong><br>
+          <small>${order.customerName} • ${order.customerPhone} • ${order.customerEmail}</small><br>
+          <small>Tổng: ${Number(order.totalAmount).toLocaleString()}đ</small>
+        </div>
+        <div class="order-actions">
+          <select data-order-id="${order._id}">
+            <option value="PENDING" ${order.orderStatus === 'PENDING' ? 'selected' : ''}>PENDING</option>
+            <option value="CONFIRMED" ${order.orderStatus === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
+            <option value="SHIPPING" ${order.orderStatus === 'SHIPPING' ? 'selected' : ''}>SHIPPING</option>
+            <option value="COMPLETED" ${order.orderStatus === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+            <option value="CANCELLED" ${order.orderStatus === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+          </select>
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('select[data-order-id]').forEach(select => {
+      select.addEventListener('change', async (event) => {
+        try {
+          await apiRequest(`/orders/${event.target.dataset.orderId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: event.target.value })
+          });
+          loadOrders();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    });
+  }
+
+  function renderUsers(users) {
+    const container = document.getElementById('userList');
+    if (!users.length) {
+      container.innerHTML = '<p>Chưa có người dùng nào.</p>';
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Họ tên</th>
+            <th>Email</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${users.map(user => `
+            <tr>
+              <td>
+                <strong>${user.name || 'Không tên'}</strong><br>
+                <small>${user.phone || 'Chưa có SĐT'}</small>
+              </td>
+              <td>${user.email}</td>
+              <td>
+                <select class="role-select" data-user-id="${user._id}">
+                  <option value="customer" ${user.role === 'customer' ? 'selected' : ''}>customer</option>
+                  <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
+                </select>
+              </td>
+              <td>
+                <span class="status-badge ${user.isActive ? 'status-active' : 'status-blocked'}">
+                  ${user.isActive ? 'Hoạt động' : 'Bị khóa'}
+                </span>
+              </td>
+              <td>
+                <button class="mini-btn toggle-btn" data-user-id="${user._id}" data-active="${user.isActive}">
+                  ${user.isActive ? 'Khóa' : 'Mở khóa'}
+                </button>
+                <button class="mini-btn delete-btn" data-user-id="${user._id}">Xóa</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    container.querySelectorAll('select.role-select').forEach(select => {
+      select.addEventListener('change', async (event) => {
+        try {
+          await apiRequest(`/auth/users/${event.target.dataset.userId}/role`, {
+            method: 'PUT',
+            body: JSON.stringify({ role: event.target.value })
+          });
+          loadUsers();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    });
+
+    container.querySelectorAll('.toggle-btn').forEach(button => {
+      button.addEventListener('click', async () => {
+        try {
+          await apiRequest(`/auth/users/${button.dataset.userId}/status`, { method: 'PATCH' });
+          loadUsers();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    });
+
+    container.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', async () => {
+        const confirmDelete = confirm('Bạn có chắc muốn xóa người dùng này?');
+        if (!confirmDelete) return;
+
+        try {
+          await apiRequest(`/auth/users/${button.dataset.userId}`, { method: 'DELETE' });
+          loadUsers();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    });
+  }
+
+  async function loadCategories() {
+    const data = await apiRequest('/categories');
+    const categories = data.data || [];
+    const select = document.getElementById('productCategory');
+    select.innerHTML = categories.map(category => `<option value="${category._id}">${category.name}</option>`).join('');
+    renderCategoryList(categories);
+  }
+
+  async function loadProducts() {
+    const data = await apiRequest('/products');
+    renderProductList(data.data || []);
+  }
+
+  async function loadOrders() {
+    const data = await apiRequest('/orders');
+    renderOrders(data.data || []);
+  }
+
+  async function loadUsers() {
+    const data = await apiRequest('/auth/users');
+    renderUsers(data.data || []);
+  }
+
+  document.getElementById('categoryForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const name = document.getElementById('categoryName').value.trim();
+    const description = document.getElementById('categoryDescription').value.trim();
+    const image = document.getElementById('categoryImage').value.trim();
+
+    try {
+      await apiRequest('/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name, description, image })
+      });
+      document.getElementById('categoryForm').reset();
+      loadCategories();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  document.getElementById('productForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = {
+      name: document.getElementById('productName').value.trim(),
+      category: document.getElementById('productCategory').value,
+      brand: document.getElementById('productBrand').value.trim(),
+      originalPrice: Number(document.getElementById('productOriginalPrice').value),
+      salePrice: Number(document.getElementById('productSalePrice').value),
+      stock: Number(document.getElementById('productStock').value || 10),
+      image: document.getElementById('productImage').value.trim(),
+      description: document.getElementById('productDescription').value.trim()
+    };
+
+    try {
+      await apiRequest('/products', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      document.getElementById('productForm').reset();
+      loadProducts();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  document.getElementById('userForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = {
+      name: document.getElementById('userName').value.trim(),
+      email: document.getElementById('userEmail').value.trim(),
+      password: document.getElementById('userPassword').value,
+      phone: document.getElementById('userPhone').value.trim(),
+      role: document.getElementById('userRole').value
+    };
+
+    try {
+      await apiRequest('/auth/users', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      document.getElementById('userForm').reset();
+      loadUsers();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('user');
+    window.location.replace('login.html');
+  }
+
+  checkAdminAccess();
+  loadCategories();
+  loadProducts();
+  loadOrders();
+  loadUsers();
+</script>
+
+</body>
+</html>

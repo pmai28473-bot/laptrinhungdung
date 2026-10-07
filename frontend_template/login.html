@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập - LHU E-Commerce</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #111827, #2563eb);
+      padding: 20px;
+    }
+    .login-card {
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    }
+    h1 { margin: 0 0 8px; text-align: center; color: #111827; }
+    .subtitle { text-align: center; color: #6b7280; margin-bottom: 25px; }
+    label { display: block; font-weight: 700; margin: 14px 0 7px; }
+    input {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
+      font-size: 15px;
+      outline: none;
+    }
+    input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 13px;
+      border: 0;
+      border-radius: 9px;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .message {
+      display: none;
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 9px;
+      font-size: 14px;
+    }
+    .error { background: #fee2e2; color: #991b1b; }
+    .success { background: #dcfce7; color: #166534; }
+    .hint {
+      margin-top: 20px;
+      padding: 12px;
+      background: #f3f4f6;
+      border-radius: 9px;
+      color: #4b5563;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <h1>🔐 Đăng nhập</h1>
+  <div class="subtitle">LHU E-Commerce</div>
+
+  <form id="loginForm">
+    <label for="email">Email</label>
+    <input
+      id="email"
+      name="email"
+      type="email"
+      autocomplete="username"
+      placeholder="Nhập email"
+      required
+    >
+
+    <label for="password">Mật khẩu</label>
+    <input
+      id="password"
+      name="password"
+      type="password"
+      autocomplete="current-password"
+      placeholder="Nhập mật khẩu"
+      required
+    >
+
+    <button id="loginBtn" type="submit">Đăng nhập</button>
+  </form>
+
+  <div id="message" class="message"></div>
+
+  <div class="hint">
+    Sau khi đăng nhập thành công:<br>
+    👑 <strong>admin</strong> → <code>admin.html</code><br>
+    👤 <strong>customer</strong> → <code>index.html</code>
+  </div>
+</div>
+
+<script>
+  // Backend hiện tại của project
+  const LOGIN_API = 'http://localhost:5000/api/auth/login';
+
+  const form = document.getElementById('loginForm');
+  const loginBtn = document.getElementById('loginBtn');
+  const message = document.getElementById('message');
+
+  function showMessage(text, type) {
+    message.textContent = text;
+    message.className = 'message ' + type;
+    message.style.display = 'block';
+  }
+
+  function getRole(result) {
+    // Hỗ trợ nhiều kiểu response thường gặp:
+    // { token, user: { role } }
+    // { data: { token, user: { role } } }
+    // { token, role }
+    return (
+      result?.user?.role ||
+      result?.data?.user?.role ||
+      result?.role ||
+      result?.data?.role ||
+      ''
+    ).toLowerCase();
+  }
+
+  function getToken(result) {
+    return (
+      result?.token ||
+      result?.data?.token ||
+      result?.accessToken ||
+      result?.data?.accessToken ||
+      ''
+    );
+  }
+
+  // Nếu đã đăng nhập thì chuyển luôn theo role đã lưu.
+  const oldToken = localStorage.getItem('token');
+  const oldRole = (localStorage.getItem('role') || '').toLowerCase();
+
+  if (oldToken && oldRole === 'admin') {
+    window.location.href = 'admin.html';
+  } else if (oldToken && oldRole === 'customer') {
+    window.location.href = 'index.html';
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Đang đăng nhập...';
+    message.style.display = 'none';
+
+    try {
+      const response = await fetch(LOGIN_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.message ||
+          result.error ||
+          'Email hoặc mật khẩu không chính xác.'
+        );
+      }
+
+      const token = getToken(result);
+      const role = getRole(result);
+
+      if (!token) {
+        throw new Error(
+          'Đăng nhập thành công nhưng Backend không trả về JWT token.'
+        );
+      }
+
+      if (role !== 'admin' && role !== 'customer') {
+        throw new Error(
+          'Backend chưa trả về role hợp lệ (admin/customer).'
+        );
+      }
+
+      // Lưu JWT và thông tin người dùng.
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
+
+      const user =
+        result?.user ||
+        result?.data?.user ||
+        null;
+
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+
+      showMessage('Đăng nhập thành công. Đang chuyển trang...', 'success');
+
+      setTimeout(() => {
+        if (role === 'admin') {
+          window.location.href = 'admin.html';
+        } else {
+          window.location.href = 'index.html';
+        }
+      }, 400);
+
+    } catch (error) {
+      console.error('LOGIN ERROR:', error);
+
+      showMessage(
+        error.message ||
+        'Không thể kết nối tới Backend.',
+        'error'
+      );
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Đăng nhập';
+    }
+  });
+</script>
+
+</body>
+</html>
